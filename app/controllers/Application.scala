@@ -34,7 +34,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
         "client_secret" -> Seq(clientSecret),
         "grant_type" -> Seq("authorization_code"),
         "redirect_uri" -> Seq(redirectURI),
-        "scope" -> Seq(scope),
+        "code" -> Seq(code),
         "state" -> Seq(state)
       )
     )
