@@ -48,7 +48,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
       tokenObject <- {println("test test4");tokenResponse.json.validate[JsObject]}                ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse)
       token <- {println("test test5");(tokenResponse.json \ "access_token").validate[String]}     ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject)
       usernameResponse <- {println("test test6");sendGetUsername(token)}                          ?| BadRequest("Problem 4\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token)
-      username <- {println("test test7");(usernameResponse.json \ "user_name").validate[String]}  ?| BadRequest("Problem 5\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse)
+      username <- {println("test test7");(usernameResponse.json \ "user_name").validate[String]}  ?| BadRequest("Problem 5\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse.body)
       saveResponse <- {println("test test8");ws.url(s"http://localhost:9200/subcount/auth/$username").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString))} ?| BadRequest("Problem 6\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse + "\n" + username)
     } yield {
       println(cacheCheck)
