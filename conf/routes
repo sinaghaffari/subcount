@@ -3,9 +3,9 @@
 # ~~~~
 
 # Home page
-GET     /subcount/register                   controllers.Application.register
+GET     /subcount/signup                   controllers.Application.signup
 
-GET     /subcount/registered                 controllers.Application.registered(code: String, scope: String, state: String)
+GET     /subcount/signedup                 controllers.Application.signedup(code: String, scope: String, state: String)
 
 GET     /subcount/:channel          controllers.Application.subcount(channel: String)
 
