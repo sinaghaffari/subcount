@@ -39,16 +39,17 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
         "state" -> Seq(state)
       )
     )
+    print("test test!")
     def sendGetUsername(token: String) = ws.url("https://api.twitch.tv/kraken").withHeaders(("Authorization", s"OAuth $token")).get()
-
+    print("test test!")
     for {
-      cacheCheck <- cache.get[Boolean](state)                             ?| BadRequest("Problem 1\n")
-      tokenResponse <- sendPostToken                                      ?| BadRequest("Problem 2\n" + cacheCheck) if tokenResponse.status != 200
-      tokenObject <- tokenResponse.json.validate[JsObject]                ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse)
-      token <- (tokenResponse.json \ "access_token").validate[String]     ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject)
-      usernameResponse <- sendGetUsername(token)                          ?| BadRequest("Problem 4\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token) if usernameResponse.status != 200
-      username <- (usernameResponse.json \ "user_name").validate[String]  ?| BadRequest("Problem 5\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse)
-      saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)) ?| BadRequest("Problem 6\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse + "\n" + username)
+      cacheCheck <- {print("test test2");cache.get[Boolean](state)}                             ?| BadRequest("Problem 1\n")
+      tokenResponse <- {print("test test3");sendPostToken}                                      ?| BadRequest("Problem 2\n" + cacheCheck) if tokenResponse.status != 200
+      tokenObject <- {print("test test4");tokenResponse.json.validate[JsObject]}                ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse)
+      token <- {print("test test5");(tokenResponse.json \ "access_token").validate[String]}     ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject)
+      usernameResponse <- {print("test test6");sendGetUsername(token)}                          ?| BadRequest("Problem 4\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token) if usernameResponse.status != 200
+      username <- {print("test test7");(usernameResponse.json \ "user_name").validate[String]}  ?| BadRequest("Problem 5\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse)
+      saveResponse <- {print("test test8");ws.url(s"http://localhost:9200/subcount/auth/$username").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString))} ?| BadRequest("Problem 6\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse + "\n" + username)
     } yield {
       println(cacheCheck)
       println(tokenResponse)
