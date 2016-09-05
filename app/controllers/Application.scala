@@ -28,6 +28,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
   }
 
   def registered(code: String, scope: String, state: String) = Action.async {
+    print("test test!")
     def sendPostToken = ws.url("https://api.twitch.tv/kraken/oauth2/token").post(
       Map(
         "client_id" -> Seq(clientID),
