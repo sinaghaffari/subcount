@@ -65,10 +65,12 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
   }
 
   def subcount(channel: String) = Action.async {
-//    for {
-//      token <- ws.url("")
-//    } yield
-      Future(Ok("100"))
+    for {
+      tokenResponse <- ws.url(s"http://localhost:9200/subcount/auth/$channel").get() ?| BadRequest("Problem 1")
+      token <- (tokenResponse.json \ "_source" \ "access_token").validate[String] ?| BadRequest("Problem 2")
+      subResponse <- ws.url(s"https://api.twitch.tv/kraken/channels/$channel/subscriptions").withHeaders(("Authorization", s"OAuth $token")).get() ?| BadRequest("Problem 3")
+      subscribers <- (subResponse.json \ "_total").validate[Int] ?| BadRequest(s"$channel does not have a subscription program.")
+    } yield Ok(subscribers.toString)
   }
 
   def index = Action {
