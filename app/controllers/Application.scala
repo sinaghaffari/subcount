@@ -41,13 +41,13 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
     def sendGetUsername(token: String) = ws.url("https://api.twitch.tv/kraken").withHeaders(("Authorization", s"OAuth $token")).get()
 
     for {
-      cacheCheck <- cache.get[Boolean](state)                             ?| BadRequest
-      tokenResponse <- sendPostToken                                      ?| BadRequest if tokenResponse.status != 200
-      tokenObject <- tokenResponse.json.validate[JsObject]                ?| BadRequest
-      token <- (tokenResponse.json \ "access_token").validate[String]     ?| BadRequest
-      usernameResponse <- sendGetUsername(token)                          ?| BadRequest if usernameResponse.status != 200
-      username <- (usernameResponse.json \ "user_name").validate[String]  ?| BadRequest
-      saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)) ?| BadRequest
+      cacheCheck <- cache.get[Boolean](state)                             ?| BadRequest("Problem 1\n")
+      tokenResponse <- sendPostToken                                      ?| BadRequest("Problem 2\n" + cacheCheck) if tokenResponse.status != 200
+      tokenObject <- tokenResponse.json.validate[JsObject]                ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse)
+      token <- (tokenResponse.json \ "access_token").validate[String]     ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject)
+      usernameResponse <- sendGetUsername(token)                          ?| BadRequest("Problem 4\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token) if usernameResponse.status != 200
+      username <- (usernameResponse.json \ "user_name").validate[String]  ?| BadRequest("Problem 5\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse)
+      saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)) ?| BadRequest("Problem 6\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse + "\n" + username)
     } yield {
       println(cacheCheck)
       println(tokenResponse)
