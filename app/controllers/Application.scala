@@ -11,6 +11,8 @@ import io.kanaka.monadic.dsl._
 import org.joda.time.DateTime
 import play.api.libs.json.{JsObject, Json}
 
+import utils.FutureFailIf._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -39,42 +41,26 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
         "state" -> Seq(state)
       )
     )
-    println("test test!")
     def sendGetUsername(token: String) = ws.url("https://api.twitch.tv/kraken").withHeaders(("Authorization", s"OAuth $token")).get()
-    println("test test!")
-    ws.url(s"http://localhost:9200/subcount/auth/_search").get().map(t=>{println(t);t}).map(_.json).foreach(println)
     for {
-      cacheCheck <- {println("test test2");cache.get[Boolean](state)}                             ?| BadRequest("Problem 1\n")
-      tokenResponse <- {println("test test3");sendPostToken}                                      ?| BadRequest("Problem 2\n" + cacheCheck)
-      tokenObject <- {println("test test4");tokenResponse.json.validate[JsObject]}                ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse)
-      token <- {println("test test5");(tokenResponse.json \ "access_token").validate[String]}     ?| BadRequest("Problem 3\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject)
-      usernameResponse <- {println("test test6");sendGetUsername(token)}                          ?| BadRequest("Problem 4\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token)
-      username <- {println("test test7");(usernameResponse.json \ "token" \ "user_name").validate[String]}  ?| BadRequest("Problem 5\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse.body)
-      saveResponse <- {println("test test8");ws.url(s"http://localhost:9200/subcount/auth/$username").put(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)).map(t => {println(t.body);t})} ?| BadRequest("Problem 6\n" + cacheCheck + "\n" + tokenResponse + "\n" + tokenObject + "\n" + token + "\n" + usernameResponse + "\n" + username)
+      cacheCheck <- cache.get[Boolean](state)                             ?| Redirect(routes.Application.register())
+      tokenResponse <- sendPostToken.failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      tokenObject <- tokenResponse.json.validate[JsObject]                ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      token <- (tokenResponse.json \ "access_token").validate[String]     ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      usernameResponse <- sendGetUsername(token).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      username <- (usernameResponse.json \ "token" \ "user_name").validate[String]  ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").put(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)).failIf(s => s.status != 200 && s.status != 201)(ex => new Exception("error")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
     } yield {
-      println(cacheCheck)
-      println(tokenResponse)
-      println(tokenObject)
-      println(token)
-      println(usernameResponse)
-      println(username)
-      println(saveResponse)
-      cache.remove(state)
       Ok(s"Success!! Get your subcount at: http://fancyfetus.io/subcount/$username")
     }
   }
 
   def subcount(channel: String) = Action.async {
     for {
-      tokenResponse <- ws.url(s"http://localhost:9200/subcount/auth/$channel").get() ?| BadRequest("Problem 1")
-      token <- (tokenResponse.json \ "_source" \ "access_token").validate[String] ?| BadRequest("Problem 2")
-      subResponse <- ws.url(s"https://api.twitch.tv/kraken/channels/$channel/subscriptions").withHeaders(("Authorization", s"OAuth $token")).get() ?| BadRequest("Problem 3")
+      tokenResponse <- ws.url(s"http://localhost:9200/subcount/auth/$channel").get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel has not been found. Please register at http://fancyfetus.io/subcount/register")
+      token <- (tokenResponse.json \ "_source" \ "access_token").validate[String] ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      subResponse <- ws.url(s"https://api.twitch.tv/kraken/channels/$channel/subscriptions").withHeaders(("Authorization", s"OAuth $token")).get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       subscribers <- (subResponse.json \ "_total").validate[Int] ?| BadRequest(s"$channel does not have a subscription program.")
     } yield Ok(subscribers.toString)
   }
-
-  def index = Action {
-    Ok(views.html.index("Your new application is ready."))
-  }
-
 }
