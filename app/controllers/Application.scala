@@ -44,7 +44,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
     def sendGetUsername(token: String) = ws.url("https://api.twitch.tv/kraken").withHeaders(("Authorization", s"OAuth $token")).get()
     for {
       cacheCheck <- cache.get[Boolean](state)                             ?| Redirect(routes.Application.signup())
-      tokenResponse <- sendPostToken.map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("1Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      tokenResponse <- sendPostToken.map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception(s"Response Status was ${e.status}. Expected 200.")) ?| (ex => InternalServerError("Internal Server Error.\nPlease contact fancyfetus@gmail.com with the error message below for assistance.\n" + ex.getMessage))
       tokenObject <- tokenResponse.json.validate[JsObject]                ?| InternalServerError("2Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       token <- (tokenResponse.json \ "access_token").validate[String]     ?| InternalServerError("3Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       usernameResponse <- sendGetUsername(token).map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("4Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
