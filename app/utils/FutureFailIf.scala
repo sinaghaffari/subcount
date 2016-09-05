@@ -10,12 +10,8 @@ object FutureFailIf {
     def failIf[S](s: (T) => Boolean)(f: (T) => Exception) = {
       future.flatMap { t =>
         s(t) match {
-          case false =>
-            println("success")
-            Future.successful(t)
-          case true =>
-            println("failed")
-            Future.failed(f(t))
+          case false => Future.successful(t)
+          case true => Future.failed(f(t))
         }
       }
     }
