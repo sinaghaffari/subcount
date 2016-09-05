@@ -42,6 +42,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
     println("test test!")
     def sendGetUsername(token: String) = ws.url("https://api.twitch.tv/kraken").withHeaders(("Authorization", s"OAuth $token")).get()
     println("test test!")
+    ws.url(s"http://localhost:9200/subcount/auth/_search").get().map(t=>{println(t);t}).map(_.json).foreach(println)
     for {
       cacheCheck <- {println("test test2");cache.get[Boolean](state)}                             ?| BadRequest("Problem 1\n")
       tokenResponse <- {println("test test3");sendPostToken}                                      ?| BadRequest("Problem 2\n" + cacheCheck)
