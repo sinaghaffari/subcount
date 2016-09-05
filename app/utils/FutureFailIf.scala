@@ -1,7 +1,7 @@
 package utils
 
 import scala.concurrent.Future
-
+import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * Created by Sina Ghaffari on 2016-09-05.
   */
