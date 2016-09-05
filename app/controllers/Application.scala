@@ -29,7 +29,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
     Redirect(redirectURL)
   }
 
-  def signedup(code: String, scope: String, state: String) = Action.async {
+  def signedup(code: String, scope: String, state: String) = Action.async { implicit request =>
     def sendPostToken = ws.url("https://api.twitch.tv/kraken/oauth2/token").post(
       Map(
         "client_id" -> Seq(clientID),
@@ -46,7 +46,7 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
       tokenResponse <- sendPostToken.failIf(_.status != 200)(e => new Exception(s"TokenResponse status was ${e.status}. Expected 200.")) ?| (ex => InternalServerError("Internal Server Error.\nPlease contact fancyfetus@gmail.com with the error message below for assistance.\n" + ex.getMessage))
       tokenObject <- tokenResponse.json.validate[JsObject]                ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       token <- (tokenResponse.json \ "access_token").validate[String]     ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
-      usernameResponse <- sendGetUsername(token).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("4Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      usernameResponse <- sendGetUsername(token).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       username <- (usernameResponse.json \ "token" \ "user_name").validate[String]  ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").put(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)).failIf(s => s.status != 200 && s.status != 201)(ex => new Exception("error")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
     } yield {
@@ -54,10 +54,10 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
     }
   }
 
-  def subcount(channel: String) = Action.async {
+  def subcount(channel: String) = Action.async { implicit request =>
     for {
-      tokenResponse <- ws.url(s"http://localhost:9200/subcount/auth/$channel").get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel has not been found. Please register at ${routes.Application.signup().url}")
-      token <- (tokenResponse.json \ "_source" \ "access_token").validate[String] ?| InternalServerError("1Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      tokenResponse <- ws.url(s"http://localhost:9200/subcount/auth/$channel").get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel has not been found. Please register at ${routes.Application.signup().absoluteURL()}")
+      token <- (tokenResponse.json \ "_source" \ "access_token").validate[String] ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       subResponse <- ws.url(s"https://api.twitch.tv/kraken/channels/$channel/subscriptions").withHeaders(("Authorization", s"OAuth $token")).get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel does not have a subscription program.")
       subscribers <- (subResponse.json \ "_total").validate[Int] ?| BadRequest(s"$channel does not have a subscription program.")
     } yield Ok(subscribers.toString)
