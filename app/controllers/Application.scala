@@ -44,11 +44,11 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
     def sendGetUsername(token: String) = ws.url("https://api.twitch.tv/kraken").withHeaders(("Authorization", s"OAuth $token")).get()
     for {
       cacheCheck <- cache.get[Boolean](state)                             ?| Redirect(routes.Application.signup())
-      tokenResponse <- sendPostToken.map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
-      tokenObject <- tokenResponse.json.validate[JsObject]                ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
-      token <- (tokenResponse.json \ "access_token").validate[String]     ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
-      usernameResponse <- sendGetUsername(token).map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
-      username <- (usernameResponse.json \ "token" \ "user_name").validate[String]  ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      tokenResponse <- sendPostToken.map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("1Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      tokenObject <- tokenResponse.json.validate[JsObject]                ?| InternalServerError("2Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      token <- (tokenResponse.json \ "access_token").validate[String]     ?| InternalServerError("3Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      usernameResponse <- sendGetUsername(token).map(t => {println(t.status);t}).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("4Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      username <- (usernameResponse.json \ "token" \ "user_name").validate[String]  ?| InternalServerError("5Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").put(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)).map(t => {println(t.status);t}).failIf(s => s.status != 200 && s.status != 201)(ex => new Exception("error")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
     } yield {
       Ok(s"Success!! Get your subcount at: http://fancyfetus.io/subcount/$username")
