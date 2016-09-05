@@ -47,10 +47,17 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
       token <- (tokenResponse.json \ "access_token").validate[String]     ?| BadRequest
       usernameResponse <- sendGetUsername(token)                          ?| BadRequest if usernameResponse.status != 200
       username <- (usernameResponse.json \ "user_name").validate[String]  ?| BadRequest
-      saveResponse <- ws.url("http://localhost:9200/subcount/auth").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)) ?| BadRequest
+      saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").post(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)) ?| BadRequest
     } yield {
+      println(cacheCheck)
+      println(tokenResponse)
+      println(tokenObject)
+      println(token)
+      println(usernameResponse)
+      println(username)
+      println(saveResponse)
       cache.remove(state)
-      Ok(s"Success!! Get your subcount at: /subcount/$username")
+      Ok(s"Success!! Get your subcount at: http://fancyfetus.io/subcount/$username")
     }
   }
 
