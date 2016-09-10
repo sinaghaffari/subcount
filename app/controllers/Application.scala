@@ -48,15 +48,14 @@ class Application @Inject() (ws: WSClient, cache: CacheApi, config: Configuratio
       token <- (tokenResponse.json \ "access_token").validate[String]     ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       usernameResponse <- sendGetUsername(token).failIf(_.status != 200)(e => new Exception("error.")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       username <- (usernameResponse.json \ "token" \ "user_name").validate[String]  ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
-      saveResponse <- ws.url(s"http://localhost:9200/subcount/auth/$username").put(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)).failIf(s => s.status != 200 && s.status != 201)(ex => new Exception("error")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
+      saveResponse <- ws.url(s"http://${config.getString("elasticsearch.host").getOrElse("localhost")}:${config.getInt("elasticsearch.port").getOrElse(9200)}/subcount/auth/$username").put(tokenObject ++ Json.obj("created_at" -> DateTime.now().toString)).failIf(s => s.status != 200 && s.status != 201)(ex => new Exception("error")) ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
     } yield {
       Ok(s"Success!! Get your subcount at: http://fancyfetus.io/subcount/$username")
     }
   }
-
   def subcount(channel: String) = Action.async { implicit request =>
     for {
-      tokenResponse <- ws.url(s"http://localhost:9200/subcount/auth/$channel").get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel has not been found. Please register at ${routes.Application.signup().absoluteURL()}")
+      tokenResponse <- ws.url(s"http://${config.getString("elasticsearch.host").getOrElse("localhost")}:${config.getInt("elasticsearch.port").getOrElse(9200)}/subcount/auth/$channel").get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel has not been found. Please register at ${routes.Application.signup().absoluteURL()}")
       token <- (tokenResponse.json \ "_source" \ "access_token").validate[String] ?| InternalServerError("Internal Server Error. Please contact fancyfetus@gmail.com for assistance.")
       subResponse <- ws.url(s"https://api.twitch.tv/kraken/channels/$channel/subscriptions").withHeaders(("Authorization", s"OAuth $token")).get().failIf(_.status != 200)(e => new Exception("Invalid")) ?| BadRequest(s"$channel does not have a subscription program.")
       subscribers <- (subResponse.json \ "_total").validate[Int] ?| BadRequest(s"$channel does not have a subscription program.")

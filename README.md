@@ -1,4 +1,4 @@
-**Note:** This functionality is supported by Nightbot using `$(twitch subcount)` in a command string.
+**Note:** This functionality is supported by Nightbot using `$(twitch subcount)` in a command string. Because of this, **development and support on this project has stopped**.
 
 # subcount
 
@@ -9,24 +9,28 @@ subcount is a simple web service written in Scala, using the Play! Framework and
 **Note:** This will only work in productions environments with [nginx](https://www.nginx.com/) already configured!
 
 1. Create a twitch developer application [here](https://www.twitch.tv/kraken/oauth2/clients/new).
-2. Set up an elasticsearch instance running at `localhost:9300`
+2. Set up an elasticsearch instance running at your desired host and port.
 3. Create the file `keys.conf` within the `conf` directory.
-  - `keys.conf` needs to contain
-    1. The Client ID of your twitch developer application.
-    2. The Client Secret of your twitch developer application.
-    3. The same Redirect URI registered to your twitch developer application.
-    4. The scope you would like to request. This should **always** be `channel_subscriptions`.
-  - Here is an example:
-  ```
-  subcount {
-    clientID = "your client id"
-    redirectURI = "your redirect uri"
-    scope = "channel_subscriptions"
-    clientSecret = "your client secret"
-  }
-  ```
+    - `keys.conf` needs to contain
+        1. The Client ID of your twitch developer application.
+        2. The Client Secret of your twitch developer application.
+        3. The same Redirect URI registered to your twitch developer application.
+        4. The scope you would like to request. This should **always** be `channel_subscriptions`.
+        5. The elastic search host and port that you wish to use.
+    - Here is an example:
+    ```
+    subcount {
+      clientID = "your client id"
+      redirectURI = "your redirect uri"
+      scope = "channel_subscriptions"
+      clientSecret = "your client secret"
+    }
+    elasticsearch {
+      host = "localhost"
+      port = 9200
+    }
+    ```
 4. Run the application by typing `sbt compile run` into your terminal.
-  - **Note:** Obviously you'll need [SBT](http://www.scala-sbt.org/) or [Activator](https://www.lightbend.com/activator/download).
-
+    - **Note:** Obviously you'll need [SBT](http://www.scala-sbt.org/) or [Activator](https://www.lightbend.com/activator/download).
 5. Go to `http://www.<Your Domain Here>.com/subcount/signin` to register and authorize your channel.
 6. Go to `http://www.<Your Domain Here>.com/subcount/<Your Channel Name Here>` to view your subcount.
